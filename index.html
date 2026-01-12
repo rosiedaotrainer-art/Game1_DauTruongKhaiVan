@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đấu Trường Khai Vấn - Leadership Coach Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; transition: all 0.3s ease; }
+        .gradient-bg { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        .card-transition { transition: transform 0.2s, opacity 0.5s; }
+        .option-btn:hover { transform: translateX(8px); }
+        .progress-bar { transition: width 0.5s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Game Container -->
+    <div id="game-container" class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative min-h-[600px] flex flex-col">
+        
+        <!-- Header -->
+        <div class="gradient-bg p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-trophy text-yellow-400"></i>
+                    Đấu Trường Khai Vấn
+                </h1>
+                <p id="level-title" class="text-xs opacity-80 uppercase tracking-widest mt-1">Khởi động</p>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-bold tracking-tighter" id="score-display">0 <span class="text-xs font-normal opacity-70">CC</span></div>
+                <div class="text-[10px] uppercase opacity-70">Coach Coins</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full h-1.5 bg-slate-100">
+            <div id="progress" class="h-full bg-yellow-400 progress-bar" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content" class="p-8 flex-grow flex flex-col">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+
+        <!-- Footer Info -->
+        <div class="px-8 py-4 border-t border-slate-100 flex justify-between items-center text-slate-400 text-xs">
+            <span id="rank-display">Hạng: Apprentice Coach</span>
+            <span id="stage-display">Chặng 0/3</span>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const state = {
+            score: 0,
+            currentStage: 0,
+            currentStep: 0,
+            userRank: "Apprentice Coach",
+            history: []
+        };
+
+        const stages = [
+            {
+                id: "intro",
+                title: "Chào mừng",
+                type: "intro",
+                content: `
+                    <div class="text-center py-10">
+                        <div class="mb-6 inline-block p-4 bg-blue-50 rounded-full">
+                            <i class="fas fa-graduation-cap text-5xl text-blue-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-4">Chào mừng Nhà Khai Vấn!</h2>
+                        <p class="text-slate-600 mb-8 leading-relaxed">
+                            Bạn đã sẵn sàng bước vào hành trình chuyển đổi từ phong cách <b>"Chỉ huy & Kiểm soát"</b> 
+                            sang <b>"Khai vấn & Trao quyền"</b> chưa? 
+                            <br><br>Hãy tích lũy <b>Coach Coins (CC)</b> để thăng hạng Master Coach!
+                        </p>
+                        <button onclick="nextStage()" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all">
+                            BẮT ĐẦU THỬ THÁCH
+                        </button>
+                    </div>
+                `
+            },
+            {
+                id: "listening",
+                title: "Chặng 1: Thám tử Lắng nghe",
+                type: "scenario",
+                scenario: "Một nhân viên tên Nam bước vào phòng với vai thõng xuống, mắt nhìn xuống sàn và thở dài: 'Dự án X trễ deadline rồi anh ạ. Em đã cố hết sức nhưng bên vận hành không phối hợp...'",
+                question: "Là một nhà khai vấn, bạn lắng nghe được điều gì ngoài lời nói của Nam?",
+                options: [
+                    { 
+                        text: "Lắng nghe sự thật: Dự án đang bị trễ do phòng vận hành.", 
+                        score: 5, 
+                        feedback: "Bạn mới chỉ nghe ở Cấp độ 1 (Nội dung). Một Coach cần nghe sâu hơn cảm xúc và thông điệp ẩn." 
+                    },
+                    { 
+                        text: "Lắng nghe cảm xúc: Nam đang cảm thấy bất lực và thiếu tự tin.", 
+                        score: 20, 
+                        feedback: "Chính xác! Bạn đã bắt đầu chạm đến Cấp độ 2 (Lắng nghe tập trung)." 
+                    },
+                    { 
+                        text: "Lắng nghe giá trị: Nam rất coi trọng trách nhiệm nhưng đang cảm thấy bị cô lập.", 
+                        score: 30, 
+                        feedback: "Tuyệt vời! Đây là Lắng nghe Toàn diện (Cấp độ 3). Bạn nhận ra giá trị ẩn sau sự thất vọng của Nam." 
+                    }
+                ]
+            },
+            {
+                id: "questions",
+                title: "Chặng 2: Bậc thầy Câu hỏi",
+                type: "scenario",
+                scenario: "Sau khi lắng nghe Nam, bạn cần đặt một câu hỏi để bắt đầu phiên khai vấn (The Kickstart Question).",
+                question: "Bạn sẽ hỏi câu nào để kích thích tư duy của Nam?",
+                options: [
+                    { 
+                        text: "Tại sao em lại để bên vận hành gây khó dễ như vậy?", 
+                        score: -10, 
+                        feedback: "Câu hỏi 'Tại sao' thường gây ra sự phòng thủ. Hãy tránh nó trong coaching." 
+                    },
+                    { 
+                        text: "What's on your mind? (Điều gì đang khiến em bận tâm nhất lúc này?)", 
+                        score: 30, 
+                        feedback: "Rất tốt! Đây là câu hỏi Khởi động kinh điển giúp mở lòng nhân viên." 
+                    },
+                    { 
+                        text: "Em có định xin lỗi khách hàng vì việc trễ này không?", 
+                        score: 0, 
+                        feedback: "Đây là câu hỏi Đóng và mang tính dẫn dắt/phán xét. Không phải là coaching." 
+                    }
+                ]
+            },
+            {
+                id: "grow",
+                title: "Chặng 3: Chinh phục GROW",
+                type: "scenario",
+                scenario: "Nam nói: 'Em muốn hoàn thành dự án này trong 2 ngày tới'. Bạn đang ở bước Reality của mô hình GROW.",
+                question: "Câu hỏi nào phù hợp nhất để kiểm tra thực trạng hiện tại?",
+                options: [
+                    { 
+                        text: "Điều gì đã ngăn cản em hoàn thành nó đúng hạn?", 
+                        score: 20, 
+                        feedback: "Tốt, câu hỏi này giúp khai thác rào cản thực tế." 
+                    },
+                    { 
+                        text: "And What Else? (Và còn gì nữa không?)", 
+                        score: 30, 
+                        feedback: "Xuất sắc! Câu hỏi AWE giúp đào sâu những thực trạng ẩn mà nhân viên chưa nói ra." 
+                    },
+                    { 
+                        text: "Em có biết trễ hạn sẽ bị trừ lương không?", 
+                        score: -20, 
+                        feedback: "Bạn đang quay lại phong cách 'Chỉ huy'. Hãy cẩn thận!" 
+                    }
+                ]
+            },
+            {
+                id: "result",
+                title: "Kết quả hành trình",
+                type: "result"
+            }
+        ];
+
+        function updateUI() {
+            const current = stages[state.currentStage];
+            document.getElementById('level-title').innerText = current.title;
+            document.getElementById('score-display').innerHTML = `${state.score} <span class="text-xs font-normal opacity-70">CC</span>`;
+            document.getElementById('stage-display').innerText = `Chặng ${state.currentStage}/${stages.length - 1}`;
+            
+            // Update Progress
+            const progressPercent = (state.currentStage / (stages.length - 1)) * 100;
+            document.getElementById('progress').style.width = `${progressPercent}%`;
+
+            // Update Rank
+            if (state.score >= 80) state.userRank = "Master Coach";
+            else if (state.score >= 40) state.userRank = "Senior Coach";
+            else state.userRank = "Apprentice Coach";
+            document.getElementById('rank-display').innerText = `Hạng: ${state.userRank}`;
+
+            const contentEl = document.getElementById('content');
+            contentEl.style.opacity = '0';
+
+            setTimeout(() => {
+                renderContent(current);
+                contentEl.style.opacity = '1';
+            }, 200);
+        }
+
+        function renderContent(stage) {
+            const contentEl = document.getElementById('content');
+            
+            if (stage.type === "intro") {
+                contentEl.innerHTML = stage.content;
+            } else if (stage.type === "scenario") {
+                contentEl.innerHTML = `
+                    <div class="mb-6">
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mb-6">
+                            <p class="text-sm text-blue-800 italic">"${stage.scenario}"</p>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-6">${stage.question}</h3>
+                        <div class="space-y-3">
+                            ${stage.options.map((opt, idx) => `
+                                <button onclick="selectOption(${idx})" class="option-btn w-full text-left p-4 rounded-xl border-2 border-slate-100 hover:border-blue-400 hover:bg-blue-50 transition-all flex justify-between items-center group">
+                                    <span class="text-sm font-medium text-slate-700">${opt.text}</span>
+                                    <i class="fas fa-chevron-right text-slate-300 group-hover:text-blue-500"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (stage.type === "result") {
+                contentEl.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="mb-4 inline-block p-6 bg-yellow-50 rounded-full relative">
+                            <i class="fas fa-medal text-6xl text-yellow-500"></i>
+                            <div class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-1 rounded-full font-bold">FINISH</div>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">Chúc mừng bạn!</h2>
+                        <p class="text-slate-500 mb-6">Bạn đã hoàn thành khóa huấn luyện giả định.</p>
+                        
+                        <div class="bg-slate-50 rounded-2xl p-6 mb-8 grid grid-cols-2 gap-4">
+                            <div class="text-center border-r border-slate-200">
+                                <div class="text-xs text-slate-400 uppercase font-bold">Tổng điểm</div>
+                                <div class="text-3xl font-black text-blue-600">${state.score}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-slate-400 uppercase font-bold">Danh hiệu</div>
+                                <div class="text-sm font-bold text-slate-700 mt-2">${state.userRank}</div>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-slate-600 mb-8 italic">
+                            "${state.score >= 60 ? 'Bạn có tiềm năng trở thành một nhà lãnh đạo khai vấn xuất sắc. Hãy áp dụng những kỹ năng này vào đội ngũ của mình ngay hôm nay!' : 'Hãy tiếp tục rèn luyện kỹ năng lắng nghe và đặt câu hỏi để chuyển dịch tư duy coaching tốt hơn.'}"
+                        </p>
+
+                        <button onclick="restartGame()" class="w-full py-4 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 font-bold rounded-xl transition-all">
+                            CHƠI LẠI
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function selectOption(index) {
+            const stage = stages[state.currentStage];
+            const option = stage.options[index];
+            state.score += option.score;
+            
+            // Show Feedback Modal
+            const contentEl = document.getElementById('content');
+            const isSuccess = option.score > 0;
+            
+            contentEl.innerHTML = `
+                <div class="text-center py-10 card-transition">
+                    <div class="mb-6 inline-block p-4 ${isSuccess ? 'bg-green-50' : 'bg-red-50'} rounded-full">
+                        <i class="fas ${isSuccess ? 'fa-check-circle text-green-500' : 'fa-exclamation-triangle text-red-500'} text-5xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">${isSuccess ? 'Tuyệt vời!' : 'Cần lưu ý!'}</h3>
+                    <p class="text-slate-600 mb-4 px-4">${option.feedback}</p>
+                    <div class="text-2xl font-black ${isSuccess ? 'text-green-500' : 'text-red-500'} mb-8">
+                        ${option.score > 0 ? '+' : ''}${option.score} CC
+                    </div>
+                    <button onclick="nextStage()" class="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-lg transition-all">
+                        TIẾP TỤC <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Update side info immediately
+            document.getElementById('score-display').innerHTML = `${state.score} <span class="text-xs font-normal opacity-70">CC</span>`;
+        }
+
+        function nextStage() {
+            state.currentStage++;
+            if (state.currentStage >= stages.length) {
+                state.currentStage = stages.length - 1;
+            }
+            updateUI();
+        }
+
+        function restartGame() {
+            state.score = 0;
+            state.currentStage = 0;
+            state.currentStep = 0;
+            updateUI();
+        }
+
+        // Initialize Game
+        window.onload = updateUI;
+    </script>
+</body>
+</html>
